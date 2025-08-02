@@ -42,6 +42,11 @@ export const deleteKeyword = async (keywordId) => {
   return response.data;
 };
 
+export const retagAllTransactions = async () => {
+  const response = await api.post('/transactions/retag');
+  return response.data;
+};
+
 export const getMonthlyChartData = async (year, month) => {
   const response = await api.get(`/charts/monthly?year=${year}&month=${month}`);
   return response.data;

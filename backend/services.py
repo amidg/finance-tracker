@@ -70,8 +70,17 @@ class TransactionService:
             # Process tags for spending
             if transaction.tags and transaction.amount_spent > 0:
                 tags = [tag.strip() for tag in transaction.tags.split(',') if tag.strip()]
-                for tag in tags:
-                    spending_by_tag[tag] += transaction.amount_spent
+                if tags:
+                    # If transaction has multiple tags, split the amount equally among them
+                    amount_per_tag = transaction.amount_spent / len(tags)
+                    for tag in tags:
+                        spending_by_tag[tag] += amount_per_tag
+                else:
+                    # If no tags, add to "Untagged" category
+                    spending_by_tag["Untagged"] += transaction.amount_spent
+            elif transaction.amount_spent > 0:
+                # No tags, add to "Untagged" category
+                spending_by_tag["Untagged"] += transaction.amount_spent
         
         # Sort periods
         periods = sorted(spending_by_period.keys())
@@ -93,6 +102,10 @@ class KeywordService:
         self.db.add(keyword_obj)
         self.db.commit()
         self.db.refresh(keyword_obj)
+        
+        # Update existing transactions with the new keyword
+        self._update_all_transaction_tags()
+        
         return keyword_obj
 
     def get_all_keywords(self):
@@ -105,6 +118,9 @@ class KeywordService:
         if keyword:
             self.db.delete(keyword)
             self.db.commit()
+            
+            # Update all transactions after removing the keyword
+            self._update_all_transaction_tags()
 
     def find_matching_tags(self, description: str) -> str:
         """Find matching tags for a description based on keywords"""
@@ -117,3 +133,13 @@ class KeywordService:
                 matching_tags.add(keyword_obj.tag)
         
         return ', '.join(sorted(matching_tags))
+
+    def _update_all_transaction_tags(self):
+        """Update tags for all transactions based on current keywords"""
+        transactions = self.db.query(Transaction).all()
+        for transaction in transactions:
+            # Find matching tags for the transaction description
+            new_tags = self.find_matching_tags(transaction.description)
+            # Update transaction tags
+            transaction.tags = new_tags
+        self.db.commit()

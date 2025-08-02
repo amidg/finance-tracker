@@ -12,6 +12,7 @@ import {
 } from '@mui/material';
 import { PieChart, BarChart } from '@mui/x-charts';
 import { getMonthlyChartData, getYearlyChartData, getAllTimeChartData } from '../api';
+import eventBus, { EVENTS } from '../services/eventBus';
 
 const Dashboard = () => {
   const [chartData, setChartData] = useState(null);
@@ -24,6 +25,17 @@ const Dashboard = () => {
   useEffect(() => {
     loadChartData();
   }, [viewType, selectedYear, selectedMonth]);
+
+  // Listen for keyword updates
+  useEffect(() => {
+    const unsubscribe = eventBus.on(EVENTS.KEYWORDS_UPDATED, () => {
+      // Reload chart data when keywords are updated
+      loadChartData();
+    });
+
+    // Cleanup subscription on component unmount
+    return () => unsubscribe();
+  }, []);
 
   const loadChartData = async () => {
     setLoading(true);

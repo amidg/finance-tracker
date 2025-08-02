@@ -112,6 +112,13 @@ async def delete_keyword(keyword_id: int, db = Depends(get_db)):
     keyword_service.delete_keyword(keyword_id)
     return {"message": "Keyword deleted successfully"}
 
+@app.post("/transactions/retag")
+async def retag_all_transactions(db = Depends(get_db)):
+    """Retag all existing transactions based on current keywords"""
+    keyword_service = KeywordService(db)
+    keyword_service._update_all_transaction_tags()
+    return {"message": "All transactions have been retagged successfully"}
+
 @app.get("/charts/monthly")
 async def get_monthly_chart_data(year: int, month: int, db = Depends(get_db)):
     """Get chart data for a specific month"""

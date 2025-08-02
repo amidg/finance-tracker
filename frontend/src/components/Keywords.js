@@ -21,7 +21,8 @@ import {
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
-import { getKeywords, createKeyword, deleteKeyword } from '../api';
+import { getKeywords, createKeyword, deleteKeyword, retagAllTransactions } from '../api';
+import eventBus, { EVENTS } from '../services/eventBus';
 
 const Keywords = () => {
   const [keywords, setKeywords] = useState([]);
@@ -63,7 +64,8 @@ const Keywords = () => {
       setOpen(false);
       setNewKeyword('');
       setNewTag('');
-      loadKeywords();
+      await loadKeywords();
+      eventBus.emit(EVENTS.KEYWORDS_UPDATED);
     } catch (err) {
       setError(err.response?.data?.detail || 'Failed to create keyword');
     }
@@ -77,7 +79,8 @@ const Keywords = () => {
     try {
       await deleteKeyword(keywordId);
       setSuccess('Keyword deleted successfully');
-      loadKeywords();
+      await loadKeywords();
+      eventBus.emit(EVENTS.KEYWORDS_UPDATED);
     } catch (err) {
       setError(err.response?.data?.detail || 'Failed to delete keyword');
     }
@@ -105,16 +108,33 @@ const Keywords = () => {
 
   return (
     <Box>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-        <Typography variant="h4">
-          Keywords Management
-        </Typography>
+      <Box sx={{ mb: 3 }}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+          <Typography variant="h4">
+            Keywords Management
+          </Typography>
+          <Button
+            variant="contained"
+            startIcon={<AddIcon />}
+            onClick={() => setOpen(true)}
+          >
+            ADD KEYWORD
+          </Button>
+        </Box>
         <Button
-          variant="contained"
-          startIcon={<AddIcon />}
-          onClick={() => setOpen(true)}
+          variant="outlined"
+          onClick={async () => {
+            try {
+              await retagAllTransactions();
+              setSuccess('All transactions have been retagged successfully');
+              eventBus.emit(EVENTS.KEYWORDS_UPDATED);
+            } catch (err) {
+              setError('Failed to retag transactions');
+            }
+          }}
+          sx={{ mt: 1 }}
         >
-          Add Keyword
+          RETAG ALL TRANSACTIONS
         </Button>
       </Box>
 
